@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 void printEncoded(unsigned int n)
 {
-    int c;
-    int a[5];
+    int32_t c;
+    int32_t a[5];
     for (int i = 0; i <= 4; i++) {
         c = n % 85 + 33;
         n = n / 85;
@@ -19,8 +20,8 @@ void printEncoded(unsigned int n)
 
 void printDecoded(unsigned int n)
 {
-    unsigned int c = 255;
-    int a[4];
+    uint32_t c = 255;
+    int32_t a[4];
     for (int i = 0; i < 4; i++) {
         a[i] = n & c;
         n = n >> 8;
@@ -32,9 +33,9 @@ void printDecoded(unsigned int n)
 
 int encode(void)
 {
-    int c;
-    int cCount = 0;
-    unsigned int c4 = 0;
+    int32_t c;
+    int32_t cCount = 0;
+    uint32_t c4 = 0;
     while ((c = getchar()) != EOF) {
         cCount++;
         c4 = c4 | c;
@@ -47,7 +48,7 @@ int encode(void)
         }
     }
     if (cCount % 4 != 0) {
-        int a = 4 - cCount % 4;
+        int32_t a = 4 - cCount % 4;
         for (int i = 1; i < a + 1; i++) {
             c4 = c4 | '\0';
             if ((cCount + i) % 4 != 0) {
@@ -62,10 +63,10 @@ int encode(void)
 
 int decode(void)
 {
-    int c;
-    int cCount = 0;
-    unsigned int c4 = 0;
-    char fail = 0;
+    int32_t c;
+    int32_t cCount = 0;
+    uint32_t c5 = 0;
+    int8_t fail = 0;
     while ((c = getchar()) != EOF) {
         if (isspace(c)) {
             continue;
@@ -74,10 +75,10 @@ int decode(void)
             fail = 1;
         }
         cCount++;
-        c4 = c4 * 85 + (c - 33);
+        c5 = c5 * 85 + (c - 33);
         if (cCount % 5 == 0) {
-            printDecoded(c4);
-            c4 = 0;
+            printDecoded(c5);
+            c5 = 0;
         }
     }
     if (cCount % 5 != 0 || fail == 1) {
