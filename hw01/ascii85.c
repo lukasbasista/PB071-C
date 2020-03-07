@@ -1,9 +1,10 @@
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 
-void printEncoded(unsigned int n) {
+void printEncoded(unsigned int n)
+{
     int c;
     int a[5];
     for (int i = 0; i <= 4; i++) {
@@ -16,7 +17,8 @@ void printEncoded(unsigned int n) {
     }
 }
 
-void printDecoded(unsigned int n) {
+void printDecoded(unsigned int n)
+{
     unsigned int c = 255;
     int a[4];
     for (int i = 0; i < 4; i++) {
@@ -35,9 +37,6 @@ int encode(void) {
     while ((c = getchar()) != EOF) {
         cCount++;
         c4 = c4 | c;
-        if (c <= 33 || c >= 117) {
-            return 1;
-        }
         if (cCount % 4 != 0) {
             c4 = c4 << 8;
         }
@@ -50,32 +49,37 @@ int encode(void) {
         int a = 4 - cCount % 4;
         for (int i = 1; i < a + 1; i++) {
             c4 = c4 | '\0';
-            if ((cCount + i) % 4 != 0) { c4 = c4 << 8; }
+            if ((cCount + i) % 4 != 0) {
+                c4 = c4 << 8;
+            }
         }
         printEncoded(c4);
-    }
-    if (cCount % 5 != 0) {
-        return 1;
     }
     printf("\n");
     return 0;
 }
 
-int decode(void) {
+int decode(void)
+{
     int c;
     int cCount = 0;
     unsigned int c4 = 0;
     while ((c = getchar()) != EOF) {
+        if (c <= 33 || c >= 117) {
+            return 1;
+        }
         if (isspace(c)) {
             continue;
-        } else {
-            cCount++;
-            c4 = c4 * 85 + (c - 33);
-            if (cCount % 5 == 0) {
-                printDecoded(c4);
-                c4 = 0;
-            }
         }
+        cCount++;
+        c4 = c4 * 85 + (c - 33);
+        if (cCount % 5 == 0) {
+            printDecoded(c4);
+            c4 = 0;
+        }
+    }
+    if (cCount % 5 != 0) {
+        return 1;
     }
     return 0;
 }
@@ -83,7 +87,8 @@ int decode(void) {
 // ================================
 // DO NOT MODIFY THE FOLLOWING CODE
 // ================================
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int retcode = 1;
 
     if (argc == 1 || (argc == 2 && strcmp(argv[1], "-e") == 0)) {
