@@ -30,7 +30,8 @@ void printDecoded(unsigned int n)
     }
 }
 
-int encode(void) {
+int encode(void)
+{
     int c;
     int cCount = 0;
     unsigned int c4 = 0;
@@ -64,12 +65,13 @@ int decode(void)
     int c;
     int cCount = 0;
     unsigned int c4 = 0;
+    char fail = 0;
     while ((c = getchar()) != EOF) {
-        if (c <= 33 || c >= 117) {
-            return 1;
-        }
         if (isspace(c)) {
             continue;
+        }
+        if (c < 33 || c > 117) {
+            fail = 1;
         }
         cCount++;
         c4 = c4 * 85 + (c - 33);
@@ -78,7 +80,7 @@ int decode(void)
             c4 = 0;
         }
     }
-    if (cCount % 5 != 0) {
+    if (cCount % 5 != 0 || fail == 1) {
         return 1;
     }
     return 0;
