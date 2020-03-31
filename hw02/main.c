@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "ctype.h"
 
 const int CARDS_HAND = 2;
@@ -62,28 +61,15 @@ int loadCards(int val[CARDS_HAND][CARDS], char col[CARDS_HAND][CARDS]) {
             fprintf(stderr, "Missing white space\n");
             return 0;
         }
-        switch (d) {
-            case '2' ... '9':
-                card = d - '0';
-                break;
-            case 'T':
-                card = 10;
-                break;
-            case 'J':
-                card = 11;
-                break;
-            case 'Q':
-                card = 12;
-                break;
-            case 'K':
-                card = 13;
-                break;
-            case 'A':
-                card = 14;
-                break;
-            default:
-                fprintf(stderr, "%c: invalid value\n", d);
-                return 0;
+        if (d >= '2' && d <= '9') card = d - '0';
+        else if (d == 'T') card = 10;
+        else if (d == 'J') card = 11;
+        else if (d == 'Q') card = 12;
+        else if (d == 'K') card = 13;
+        else if (d == 'A') card = 14;
+        else {
+            fprintf(stderr, "%c: Invalid value\n", d);
+            return 0;
         }
         if (i < 2) {
             val[0][i] = card;
