@@ -115,7 +115,6 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
 
     p1 = four_of_kind(val1);
     p2 = four_of_kind(val2);
-
     if (p1 != 0 || p2 != 0) {
         if (p1 == p2) {
             return highCard(val1, val2, 1, p1, 0);
@@ -322,13 +321,19 @@ int straightflush(int val[], char col[])
 {
     char color = most_color(col);
     int counter = 0;
+    int d = 0;
     if (val[6] == 14 && val[0] == 2 && col[6] == col[0])
         counter++;
     for (int i = 0; i < CARDS - 1; ++i) {
-        if (val[i] == val[i + 1] && col[i] != color)
+        if (val[i] == val[i + 1]) {
+            if (col[i] == color)
+                d++;
             continue;
-        if (val[i] == val[i + 1] - 1 && col[i] == color && col[i + 1] == color)
+        }
+        if (val[i] == val[i + 1] - 1 && col[i - d] == color && col[i + 1] == color) {
             counter++;
+            d = 0;
+        }
         else {
             if (counter >= 4)
                 return val[i];
@@ -336,7 +341,7 @@ int straightflush(int val[], char col[])
         }
     }
     if (counter >= 4)
-        return val[CARDS];
+        return val[CARDS - 1];
     return 0;
 }
 
