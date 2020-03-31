@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include "ctype.h"
+#include <stdio.h>
 
 const int CARDS_HAND = 2;
 const int CARDS = 7;
@@ -110,8 +110,7 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
             return 'D';
         if (p1 > p2)
             return 'W';
-        else
-            return 'L';
+        return 'L';
     }
 
     p1 = four_of_kind(val1);
@@ -123,8 +122,7 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
         }
         if (p1 > p2)
             return 'W';
-        else
-            return 'L';
+        return 'L';
     }
 
     int tok1 = three_of_kind(val1);
@@ -138,14 +136,12 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
                 return 'D';
             if (pair1 > pair2)
                 return 'W';
-            else
-                return 'L';
+            return 'L';
 
         }
         if (tok1 > tok2)
             return 'W';
-        else
-            return 'L';
+        return 'L';
     }
 
     char flush1 = flush(col1);
@@ -167,8 +163,7 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
             return 'D';
         if (p1 > p2)
             return 'W';
-        else
-            return 'L';
+        return 'L';
     }
 
     if (tok1 != 0 && tok2 != 0) {
@@ -177,8 +172,7 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
         }
         if (tok1 > tok2)
             return 'W';
-        else
-            return 'L';
+        return 'L';
     }
     if (tok1 != 0)
         return 'W';
@@ -194,8 +188,7 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
                 return highCard(val1, val2, 3, pair1, spair1);
             if (pair1 > pair2)
                 return 'W';
-            else
-                return 'L';
+            return 'L';
         }
         if (spair1 != 0 && spair2 != 0) {
 
@@ -207,8 +200,7 @@ char match_result(int val1[], char col1[], int val2[], char col2[])
                 return 'L';
             if (pair1 > pair2)
                 return 'W';
-            else
-                return 'L';
+            return 'L';
         }
         if (spair1 != 0)
             return 'W';
@@ -287,14 +279,13 @@ char highCard_color(const int val1[], const int val2[], char col1[], char col2[]
                 return 'W';
             if (val1[i1] < val2[i2])
                 return 'L';
-            else
-                counter++;
+            counter++;
             i1--;
             i2--;
         }
-        if (col1[i1] != c)
+        if (i1 >= 0 && col1[i1] != c)
             i1--;
-        if (col2[i2] != c)
+        if (i2 >= 0 && col2[i2] != c)
             i2--;
     }
     return 'D';
@@ -341,8 +332,7 @@ int straightflush(int val[], char col[])
         else {
             if (counter >= 4)
                 return val[i];
-            else
-                counter = 0;
+            counter = 0;
         }
     }
     if (counter >= 4)
@@ -356,7 +346,7 @@ int straight(int val[])
     if (val[6] == 14 && val[0] == 2)
         counter++;
 
-    for (int i = 0; i < CARDS; ++i) {
+    for (int i = 0; i < CARDS - 1; ++i) {
         if (val[i] == val[i + 1])
             continue;
         if (val[i] == val[i + 1] - 1)
@@ -367,6 +357,8 @@ int straight(int val[])
             counter = 0;
         }
     }
+    if (counter >= 4)
+        return val[CARDS - 1];
     return 0;
 }
 
@@ -388,11 +380,11 @@ char most_color(const char colors[])
             switch (j) {
             case 0:
                 return 'h';
-             case 1:
+            case 1:
                 return 'd';
-             case 2:
+            case 2:
                 return 's';
-             case 3:
+            case 3:
                 return 'c';
             }
     }
