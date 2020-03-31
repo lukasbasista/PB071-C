@@ -333,8 +333,7 @@ int straightflush(int val[], char col[])
         if (val[i] == val[i + 1] - 1 && col[i - d] == color && col[i + 1] == color) {
             counter++;
             d = 0;
-        }
-        else {
+        } else {
             if (counter >= 4)
                 return val[i];
             counter = 0;
