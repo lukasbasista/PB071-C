@@ -73,7 +73,7 @@ int run(char *nodesFile, char *edgesFile, char *sourceNode, char *destNode, char
     Node *dest_node = graph_get_node(graph, strtol(destNode, NULL, 10));
 
     if (!dest_node) {
-        fprintf(stderr, "Invalid destination node id.\n");
+        fprintf(stderr, "Wrong node id.\n");
         release(nodes, edges, graph, NULL);
         return 1;
     }
@@ -85,7 +85,7 @@ int run(char *nodesFile, char *edgesFile, char *sourceNode, char *destNode, char
     }
 
     if (node_get_distance(dest_node) == UINT_MAX) {
-        fprintf(stderr, "No path exists between these two nodes.\n");
+        fprintf(stderr, "Path between nodes doesn't exist.\n");
         release(nodes, edges, graph, heap);
         return 1;
     }
@@ -97,7 +97,7 @@ int run(char *nodesFile, char *edgesFile, char *sourceNode, char *destNode, char
     else {
         FILE *file = NULL;
         if (!(file = fopen(outputFile, "w"))) {
-            fprintf(stderr, "Cannot create new file to print data in.\n");
+            fprintf(stderr, "Error occurred while creating file.\n");
             error = true;
         }
         printPath(strtol(sourceNode, NULL, 10), dest_node, file);
@@ -186,25 +186,25 @@ Heap *findPath(Graph *graph, unsigned int id, Node *dest)
     }
     heap_decrease_distance(heap, source_node, 0, NULL);
     Node *node = NULL;
-    Node *temp = NULL;
-    unsigned int alt = 0;
+    Node *temp_node = NULL;
+    unsigned int x = 0;
 
     while (!heap_is_empty(heap)) {
         node = heap_extract_min(heap);
-        alt = node_get_distance(node);
+        x = node_get_distance(node);
         struct edge *temp_edges = node_get_edges(node);
-        unsigned int d = alt;
-        if (alt == UINT_MAX)
+        unsigned int d = x;
+        if (x == UINT_MAX)
             break;
         for (unsigned short i = 0; i < node_get_n_outgoing(node); i++) {
-            temp = temp_edges[i].destination;
-            alt = d + temp_edges[i].mindelay;
-            if (alt < node_get_distance(temp)) {
-                heap_decrease_distance(heap, temp, alt, node);
+            temp_node = temp_edges[i].destination;
+            x = d + temp_edges[i].mindelay;
+            if (x < node_get_distance(temp_node)) {
+                heap_decrease_distance(heap, temp_node, x, node);
             }
         }
-        if (node == dest) {
-            return heap;
+        if (dest == node) {
+            break;
         }
     }
     return heap;
@@ -213,14 +213,14 @@ Heap *findPath(Graph *graph, unsigned int id, Node *dest)
 void printPath(unsigned int id, Node *dest, FILE *output)
 {
     fprintf(output, "digraph {\n");
-    if (id != node_get_id(dest)) {
-        Node *temp_node = dest;
-        Node *temp_prev = node_get_previous(temp_node);
-        while (temp_prev) {
-            int distance = node_get_distance(temp_node) - node_get_distance(temp_prev);
-            fprintf(output, "\t%u -> %u [label=%u];\n", node_get_id(temp_prev), node_get_id(temp_node), distance);
-            temp_node = temp_prev;
-            temp_prev = node_get_previous(temp_prev);
+    if (node_get_id(dest) != id) {
+        Node *node = dest;
+        Node *prev_node = node_get_previous(node);
+        while (prev_node) {
+            int distance = node_get_distance(node) - node_get_distance(prev_node);
+            fprintf(output, "\t%u -> %u [label=%u];\n", node_get_id(prev_node), node_get_id(node), distance);
+            node = prev_node;
+            prev_node = node_get_previous(prev_node);
         }
     }
     fprintf(output, "}\n");
