@@ -10,10 +10,11 @@
 #include "graph.h"
 #include "graph-private.h"
 #include "heap.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
+
 
 int run(char *, char *, char *, char *, char *);
 
