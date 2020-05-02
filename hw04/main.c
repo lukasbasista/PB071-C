@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-
 #include "graph.h"
 #include "heap.h"
 #include "graph-private.h"
@@ -73,7 +72,7 @@ bool loadFile_edges(FILE *file, Graph *graph) {
             break;
         }
         if (countChars(line, ',') != 6) {
-            fprintf(stderr, "Invalid number of commas in line [%d].\n");
+            fprintf(stderr, "Invalid number of commas in line.\n");
             return false;
         }
         char *token = strtok(line, ",");
