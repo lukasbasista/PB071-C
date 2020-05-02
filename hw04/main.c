@@ -8,12 +8,12 @@
 */
 
 #include "graph.h"
+#include "graph-private.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include "heap.h"
-#include "graph-private.h"
 
 int run(char *, char *, char *, char *, char *);
 
@@ -167,7 +167,7 @@ bool loadFile_edges(FILE *file, Graph *graph)
 
 int countChars(char *s, char c)
 {
-    return *s == '\0'? 0 : countChars(s + 1, c) + (*s == c);
+    return *s == '\0' ? 0 : countChars(s + 1, c) + (*s == c);
 }
 
 Heap *findPath(Graph *graph, unsigned int id, Node *dest)
