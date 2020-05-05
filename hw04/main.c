@@ -8,7 +8,6 @@
 */
 
 #include "graph.h"
-#include "graph-private.h"
 #include "heap.h"
 #include <limits.h>
 #include <stdio.h>
@@ -43,18 +42,20 @@ int main(int argc, char **argv)
     }
 }
 
-int run(char *nodesFile, char *edgesFile, char *sourceNode, char *destNode, char *outputFile)
+int run(char *nodesFile, char *edgesFile, char *srcNode, char *dstNode, char *outputFile)
 {
     FILE *nodes = NULL;
-    FILE *edges = NULL;
 
     if (!(nodes = fopen(nodesFile, "r"))) {
-        fprintf(stderr, "Cannot open nodes file '%s'. No such file or directory.\n", nodesFile);
+        fprintf(stderr, "Cannot open nodes file '%s'.\n", nodesFile);
         return 1;
     }
+
+    FILE *edges = NULL;
+
     if (!(edges = fopen(edgesFile, "r"))) {
         release(nodes, NULL, NULL, NULL);
-        fprintf(stderr, "Cannot open edges file '%s'. No such file or directory.\n", edgesFile);
+        fprintf(stderr, "Cannot open edges file '%s'.\n", edgesFile);
         return 1;
     }
 
@@ -70,42 +71,39 @@ int run(char *nodesFile, char *edgesFile, char *sourceNode, char *destNode, char
         return 1;
     }
 
-    Node *dest_node = graph_get_node(graph, strtol(destNode, NULL, 10));
+    Node *dst_node = graph_get_node(graph, strtol(dstNode, NULL, 10));
 
-    if (!dest_node) {
+    if (!dst_node) {
         fprintf(stderr, "Wrong node id.\n");
         release(nodes, edges, graph, NULL);
         return 1;
     }
 
-    Heap *heap = findPath(graph, strtol(sourceNode, NULL, 10), dest_node);
+    Heap *heap = findPath(graph, strtol(srcNode, NULL, 10), dst_node);
     if (!heap) {
         release(nodes, edges, graph, NULL);
         return 1;
     }
 
-    if (node_get_distance(dest_node) == UINT_MAX) {
+    if (node_get_distance(dst_node) == UINT_MAX) {
         fprintf(stderr, "Path between nodes doesn't exist.\n");
         release(nodes, edges, graph, heap);
         return 1;
     }
 
-    bool error = false;
-
     if (!outputFile)
-        printPath(strtol(sourceNode, NULL, 10), dest_node, stdout);
+        printPath(strtol(srcNode, NULL, 10), dst_node, stdout);
     else {
         FILE *file = NULL;
         if (!(file = fopen(outputFile, "w"))) {
             fprintf(stderr, "Error occurred while creating file.\n");
-            error = true;
+            release(nodes, edges, graph, heap);
+            return 1;
         }
-        printPath(strtol(sourceNode, NULL, 10), dest_node, file);
+        printPath(strtol(srcNode, NULL, 10), dst_node, file);
         fclose(file);
     }
     release(nodes, edges, graph, heap);
-    if (error)
-        return 1;
     return 0;
 }
 
@@ -141,8 +139,8 @@ bool loadFile_nodes(FILE *file, Graph *graph)
 
 bool loadFile_edges(FILE *file, Graph *graph)
 {
-    unsigned int source = 0;
-    unsigned int dest = 0;
+    unsigned int src = 0;
+    unsigned int dst = 0;
     int mintime = 0;
     char line[201] = "";
     for (;;) {
@@ -154,13 +152,13 @@ bool loadFile_edges(FILE *file, Graph *graph)
             return false;
         }
         char *token = strtok(line, ",");
-        source = strtol(token, NULL, 10);
+        src = strtol(token, NULL, 10);
         token = strtok(NULL, ",");
-        dest = strtol(token, NULL, 10);
+        dst = strtol(token, NULL, 10);
         strtok(NULL, ",");
         token = strtok(NULL, ",");
         mintime = strtol(token, NULL, 10);
-        if (!graph_insert_edge(graph, source, dest, mintime))
+        if (!graph_insert_edge(graph, src, dst, mintime))
             return false;
     }
     return true;
@@ -171,20 +169,20 @@ int countChars(char *s, char c)
     return *s == '\0' ? 0 : countChars(s + 1, c) + (*s == c);
 }
 
-Heap *findPath(Graph *graph, unsigned int id, Node *dest)
+Heap *findPath(Graph *graph, unsigned int id, Node *dst)
 {
     Heap *heap = heap_new_from_graph(graph);
     if (!heap) {
         fprintf(stderr, "Cannot allocate new memory.\n");
         return NULL;
     }
-    Node *source_node = graph_get_node(graph, id);
-    if (!source_node) {
+    Node *src_node = graph_get_node(graph, id);
+    if (!src_node) {
         heap_free(heap);
         fprintf(stderr, "Invalid source node id.\n");
         return NULL;
     }
-    heap_decrease_distance(heap, source_node, 0, NULL);
+    heap_decrease_distance(heap, src_node, 0, NULL);
     Node *node = NULL;
     Node *temp_node = NULL;
     unsigned int x = 0;
@@ -203,18 +201,18 @@ Heap *findPath(Graph *graph, unsigned int id, Node *dest)
                 heap_decrease_distance(heap, temp_node, x, node);
             }
         }
-        if (dest == node) {
+        if (dst == node) {
             break;
         }
     }
     return heap;
 }
 
-void printPath(unsigned int id, Node *dest, FILE *output)
+void printPath(unsigned int id, Node *dst, FILE *output)
 {
     fprintf(output, "digraph {\n");
-    if (node_get_id(dest) != id) {
-        Node *node = dest;
+    if (node_get_id(dst) != id) {
+        Node *node = dst;
         Node *prev_node = node_get_previous(node);
         while (prev_node) {
             int distance = node_get_distance(node) - node_get_distance(prev_node);
