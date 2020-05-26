@@ -21,7 +21,7 @@ typedef struct options
     long t;
     bool hidden;
     char zero;
-    char *path;
+    int path;
 } options;
 
 
@@ -60,10 +60,12 @@ int main(int argc, char **argv)
     DIR *directory;
     char **resultsArray = NULL;
     int size = 0;
+    char *path = ".";
 
     int err = parseOptions(argc, argv, &options);
 
-    char *path = options.path;
+    if (options.path != 0)
+        path = argv[options.path];
 
     if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
         path[strlen(path) - 1] = '\0';
@@ -110,7 +112,7 @@ void optionsInit(options *option)
         option->t = LONG_MAX;
         option->hidden = false;
         option->zero = '\n';
-        option->path = ".";
+        option->path = 0;
     }
 }
 
@@ -188,7 +190,8 @@ int parseOptions(int argc, char **argv, options *options)
                 return 2;
             }
         }
-        options->path = argv[optind];
+        if (optind < argc)
+            options->path = optind;
     }
     return 0;
 }
