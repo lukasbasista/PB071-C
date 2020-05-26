@@ -57,24 +57,15 @@ int main(int argc, char **argv)
 {
     options options;
     optionsInit(&options);
-    char *path = NULL;
+    char *path = ".";
     DIR *directory;
     char **resultsArray = NULL;
     int size = 0;
-
     for (int i = 1; i < argc; ++i) {
         if (strstr(argv[i], "/") != NULL)
             path = argv[i];
     }
-    if (path == NULL) {
-        char cwd[PATH_MAX];
-        if (getcwd(cwd, sizeof(cwd)) != NULL) {
-            path = cwd;
-        } else {
-            perror("getcwd() error");
-            return 1;
-        }
-    }
+
     if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
         path[strlen(path) - 1] = '\0';
     }
