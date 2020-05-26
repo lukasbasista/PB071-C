@@ -7,11 +7,13 @@
 #include <pwd.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <values.h>
+#include <errno.h>
+#include <unistd.h>
 
 
-typedef struct options {
+typedef struct options
+{
     char *name;
     char *sort;
     char *mask;
@@ -51,7 +53,8 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *re
 
 void closeAndFree(DIR *directory, char **array, const int *size);
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     options options;
     optionsInit(&options);
     char *path;
@@ -61,8 +64,15 @@ int main(int argc, char **argv) {
 
     if (argv[1] != NULL && argv[1][0] != '-')
         path = argv[1];
-    else
-        path = argv[0];
+    else {
+        char cwd[PATH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            path = cwd;
+        } else {
+            perror("getcwd() error");
+            return 1;
+        }
+    }
     if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
         path[strlen(path) - 1] = '\0';
     }
@@ -70,23 +80,25 @@ int main(int argc, char **argv) {
         path[strlen(path) - 1] = '\0';
     }
 
-    int error = parseOptions(argc, argv, &options);
-    if (error > 0) {
-        return error;
-    } else if (error == -1)
+    int err = parseOptions(argc, argv, &options);
+    if (err > 0) {
+        return err;
+    }
+    if (err == -1)
         return 0;
+    fprintf(stderr, "%s", path);
     directory = opendir(path);
 
     if (directory != NULL) {
-        error = getPaths(directory, &options, &path, &resultsArray, &size, 0);
+        err = getPaths(directory, &options, &path, &resultsArray, &size, 0);
         sort(&resultsArray, &size, &options);
         for (int i = 0; i < size; i++) {
             printf("%s%c", resultsArray[i], options.zero);
         }
         closeAndFree(directory, resultsArray, &size);
-        if (error != 0) {
+        if (err != 0) {
             fprintf(stderr, "Error");
-            return error;
+            return err;
         }
     } else {
         fprintf(stderr, "failed to open directory.");
@@ -96,7 +108,8 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void optionsInit(options *option) {
+void optionsInit(options *option)
+{
     if (option != NULL) {
         option->name = NULL;
         option->sort = NULL;
@@ -109,7 +122,8 @@ void optionsInit(options *option) {
     }
 }
 
-void showH() {
+void showH()
+{
     printf("Help.\n"
            "USAGE: [OPTIONS] [START_DIR]\n"
            "OPTIONS:\n"
@@ -128,64 +142,66 @@ void showH() {
 
 }
 
-int parseOptions(int argc, char **argv, options *options) {
+int parseOptions(int argc, char **argv, options *options)
+{
     int opt;
     char *endpf = NULL;
     char *endpt = NULL;
     if (options != NULL) {
         while ((opt = getopt(argc, argv, ":a0hn:s:u:f:t:m:")) != -1) {
             switch (opt) {
-                case 'n':
-                    options->name = optarg;
-                    break;
-                case 's':
-                    options->sort = optarg;
-                    break;
-                case 'm':
-                    options->mask = optarg;
-                    break;
-                case 'u':
-                    if ((options->user = getpwnam(optarg)) == NULL)
-                        options->user = NULL;
-                    break;
-                case 'f':
-                    errno = 0;
-                    long valueF = strtol(optarg, &endpf, 10);
-                    if (*endpf != '\0' || errno != 0)
-                        fprintf(stderr, "%s: invalid number", optarg);
-                    else
-                        options->f = valueF;
-                    break;
-                case 't':
-                    errno = 0;
-                    long valueT = strtol(optarg, &endpt, 10);
-                    if (*endpt != '\0' || errno != 0)
-                        fprintf(stderr, "%s: invalid number", optarg);
-                    else
-                        options->t = valueT;
-                    break;
-                case 'a':
-                    options->hidden = true;
-                    break;
-                case '0':
-                    options->zero = '\0';
-                    break;
-                case 'h':
-                    showH();
-                    return -1;
-                case ':':
-                    fprintf(stderr, "option needs a value -%c!\n", optopt);
-                    return 1;
-                case '?':
-                    fprintf(stderr, "unknown option: -%c\n", optopt);
-                    return 2;
+            case 'n':
+                options->name = optarg;
+                break;
+            case 's':
+                options->sort = optarg;
+                break;
+            case 'm':
+                options->mask = optarg;
+                break;
+            case 'u':
+                if ((options->user = getpwnam(optarg)) == NULL)
+                    options->user = NULL;
+                break;
+            case 'f':
+                errno = 0;
+                long valueF = strtol(optarg, &endpf, 10);
+                if (*endpf != '\0' || errno != 0)
+                    fprintf(stderr, "%s: invalid number", optarg);
+                else
+                    options->f = valueF;
+                break;
+            case 't':
+                errno = 0;
+                long valueT = strtol(optarg, &endpt, 10);
+                if (*endpt != '\0' || errno != 0)
+                    fprintf(stderr, "%s: invalid number", optarg);
+                else
+                    options->t = valueT;
+                break;
+            case 'a':
+                options->hidden = true;
+                break;
+            case '0':
+                options->zero = '\0';
+                break;
+            case 'h':
+                showH();
+                return -1;
+            case ':':
+                fprintf(stderr, "option needs a value -%c!\n", optopt);
+                return 1;
+            case '?':
+                fprintf(stderr, "unknown option: -%c\n", optopt);
+                return 2;
             }
         }
     }
     return 0;
 }
 
-int isHidden(const char *file) {
+int isHidden(const char *file)
+{
     if (file != NULL) {
         if (file[0] == '.')
             return 1;
@@ -193,7 +209,8 @@ int isHidden(const char *file) {
     return 0;
 }
 
-char *getFileName(const char *path) {
+char *getFileName(const char *path)
+{
     const char *file;
     if (path != NULL) {
         char *lastSlash = strrchr(path, '/');
@@ -210,7 +227,8 @@ char *getFileName(const char *path) {
     return NULL;
 }
 
-char *getPerms(struct stat *s) {
+char *getPerms(struct stat *s)
+        {
     static char perms[4];
     int o = 0;
     int g = 0;
@@ -239,7 +257,8 @@ char *getPerms(struct stat *s) {
     return perms;
 }
 
-int isSuitable(struct dirent *drnt, options *opt, struct stat status, int counter) {
+int isSuitable(struct dirent *drnt, options *opt, struct stat status, int counter)
+        {
     if (drnt != NULL && opt != NULL) {
         struct passwd *owner = NULL;
         char *fname = NULL;
@@ -271,7 +290,8 @@ int isSuitable(struct dirent *drnt, options *opt, struct stat status, int counte
     return 0;
 }
 
-void sort(char ***array, const int *arraySize, options *options) {
+void sort(char ***array, const int *arraySize, options *options)
+{
     if (array != NULL && arraySize != NULL && options != NULL) {
         char **arr = *array;
         int (*operation)(const void *, const void *) = NULL;
@@ -290,7 +310,8 @@ void sort(char ***array, const int *arraySize, options *options) {
 
 }
 
-int compareSizes(const void *f1, const void *f2) {
+int compareSizes(const void *f1, const void *f2)
+{
     struct stat statusOne;
     struct stat statusTwo;
     stat(*(char **) f1, &statusOne);
@@ -302,11 +323,13 @@ int compareSizes(const void *f1, const void *f2) {
     return compareNames(f1, f2);
 }
 
-int comparePaths(const void *f1, const void *f2) {
+int comparePaths(const void *f1, const void *f2)
+{
     return strcmp(*(char **) f1, *(char **) f2);
 }
 
-int compareNames(const void *f1, const void *f2) {
+int compareNames(const void *f1, const void *f2)
+{
     char *firstName = getFileName(*(char **) f1);
     char *secondName = getFileName(*(char **) f2);
     int result = strcasecmp(firstName, secondName);
@@ -318,7 +341,8 @@ int compareNames(const void *f1, const void *f2) {
     return result;
 }
 
-void addToArray(char *filename, char ***array, int *arraySize) {
+void addToArray(char *filename, char ***array, int *arraySize)
+{
     if (array != NULL && arraySize != NULL && filename != NULL) {
         char **arr = *array;
         if (*arraySize % 10 == 0) {
@@ -330,7 +354,8 @@ void addToArray(char *filename, char ***array, int *arraySize) {
     }
 }
 
-int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *resNum, int counter) {
+int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *resNum, int counter)
+{
     if (dir != NULL && options != NULL && dirpath != NULL && result != NULL) {
         struct dirent *drnt = NULL;
         char *filepath = NULL;
@@ -347,7 +372,6 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *re
             }
 
             if (stat(filepath, &status) < 0) {
-
                 fprintf(stderr, "Problem while getting stats: %s\nError: %s\n", filepath, strerror(errno));
                 return 4;
             }
@@ -365,8 +389,7 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *re
                             getPaths(nextDir, options, &filepath, result, resNum, counter + 1);
                             closedir(nextDir);
                         } else {
-                            fprintf(stderr, "Problem while entering directory: %s\nError: %s\n", filepath,
-                                    strerror(errno));
+                            fprintf(stderr, "Problem while entering directory: %s\nError: %s\n", filepath, strerror(errno));
                         }
                     }
                 }
@@ -377,7 +400,8 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *re
     return 0;
 }
 
-void closeAndFree(DIR *directory, char **array, const int *size) {
+void closeAndFree(DIR *directory, char **array, const int *size)
+{
     if (array != NULL && size != NULL) {
         for (int i = 0; i < *size; i++) {
             free(array[i]);
