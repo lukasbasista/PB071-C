@@ -1,5 +1,5 @@
-#include <dirent.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <getopt.h>
 #include <pwd.h>
@@ -336,8 +336,8 @@ int compareSizes(const void *f1, const void *f2)
 {
     struct stat statusOne;
     struct stat statusTwo;
-    stat(*(char **) f1, &statusOne);
-    stat(*(char **) f2, &statusTwo);
+    lstat(*(char **) f1, &statusOne);
+    lstat(*(char **) f2, &statusTwo);
     if (statusOne.st_size < statusTwo.st_size)
         return 1;
     if (statusOne.st_size > statusTwo.st_size)
@@ -392,26 +392,30 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *si
             strcat(filepath, drnt->d_name);
 
 
-            if (stat(filepath, &status) < 0) {
+            if (lstat(filepath, &status) < 0) {
                 fprintf(stderr, "Status error: %s\n", filepath);
                 free(filepath);
                 return 4;
             }
-            if (!S_ISDIR(status.st_mode)) {
+
+            if (!S_ISDIR(status.st_mode) ) {
                 if (isSuitable(drnt, options, status, counter)) {
                     addToArray(filepath, result, size);
                 } else {
                     free(filepath);
                 }
 
+
             } else {
-                if ((strcmp(drnt->d_name, ".") != 0) && (strcmp(drnt->d_name, "..") != 0)) {
-                    if (options->hidden || isHidden(drnt->d_name) != 1) {
-                        if ((nextDir = opendir(filepath)) != NULL) {
-                            getPaths(nextDir, options, &filepath, result, size, counter + 1);
-                            closedir(nextDir);
-                        } else {
-                            fprintf(stderr, "Problem while entering directory: %s\nError: %s\n", filepath, strerror(errno));
+                if (!(options->f - 1 > counter || options->t - 1 < counter)) {
+                    if ((strcmp(drnt->d_name, ".") != 0) && (strcmp(drnt->d_name, "..") != 0)) {
+                        if (options->hidden || isHidden(drnt->d_name) != 1) {
+                            if ((nextDir = opendir(filepath)) != NULL) {
+                                getPaths(nextDir, options, &filepath, result, size, counter + 1);
+                                closedir(nextDir);
+                            } else {
+                                fprintf(stderr, "Problem while entering directory: %s", filepath);
+                            }
                         }
                     }
                 }
