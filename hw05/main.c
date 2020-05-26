@@ -57,14 +57,16 @@ int main(int argc, char **argv)
 {
     options options;
     optionsInit(&options);
-    char *path;
+    char *path = NULL;
     DIR *directory;
     char **resultsArray = NULL;
     int size = 0;
 
-    if (argv[1] != NULL && argv[1][0] != '-')
-        path = argv[1];
-    else {
+    for (int i = 1; i < argc; ++i) {
+        if (strstr(argv[i], "/") != NULL)
+            path = argv[i];
+    }
+    if (path == NULL) {
         char cwd[PATH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             path = cwd;
@@ -333,7 +335,7 @@ int compareNames(const void *f1, const void *f2)
     char *secondName = getFileName(*(char **) f2);
     int result = strcasecmp(firstName, secondName);
     if (result == 0) {
-        result = strcmp(f1, f2);
+        result = comparePaths(f1, f2);
     }
     free(firstName);
     free(secondName);
