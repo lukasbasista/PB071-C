@@ -64,25 +64,23 @@ int main(int argc, char **argv)
 
     int err = parseOptions(argc, argv, &options);
 
-    if (options.path != 0)
+    if (options.path != 0) {
         path = argv[options.path];
 
-    if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
-        path[strlen(path) - 1] = '\0';
-    }
-    if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
-        path[strlen(path) - 1] = '\0';
+        if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
+            path[strlen(path) - 1] = '\0';
+        }
+        if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
+            path[strlen(path) - 1] = '\0';
+        }
     }
 
-    if (err > 0) {
-        return err;
-    }
     if (err == -1)
         return 0;
+    if (err > 0)
+        return err;
 
-    directory = opendir(path);
-
-    if (directory != NULL) {
+    if ((directory = opendir(path)) != NULL) {
         err = getPaths(directory, &options, &path, &resultsArray, &size, 0);
         sort(&resultsArray, &size, &options);
         for (int i = 0; i < size; i++) {
@@ -148,28 +146,40 @@ int parseOptions(int argc, char **argv, options *options)
                 options->name = optarg;
                 break;
             case 's':
-                options->sort = optarg;
+                if (strcmp(optarg, "s") == 0 || strcmp(optarg, "f") == 0)
+                    options->sort = optarg;
+                else {
+                    fprintf(stderr, "%s: No such comparator\n", optarg);
+                    return 1;
+                }
                 break;
             case 'm':
                 options->mask = optarg;
                 break;
             case 'u':
-                if ((options->user = getpwnam(optarg)) == NULL)
+                if ((options->user = getpwnam(optarg)) == NULL) {
                     options->user = NULL;
+                    fprintf(stderr, "%s: No such user.", optarg);
+                    return 1;
+                }
                 break;
             case 'f':
                 errno = 0;
                 long valueF = strtol(optarg, &endpf, 10);
-                if (*endpf != '\0' || errno != 0)
-                    fprintf(stderr, "%s: invalid number", optarg);
+                if (*endpf != '\0' || errno != 0) {
+                    fprintf(stderr, "%s: invalid number\n", optarg);
+                    return 1;
+                }
                 else
                     options->f = valueF;
                 break;
             case 't':
                 errno = 0;
                 long valueT = strtol(optarg, &endpt, 10);
-                if (*endpt != '\0' || errno != 0)
+                if (*endpt != '\0' || errno != 0) {
                     fprintf(stderr, "%s: invalid number", optarg);
+                    return 1;
+                }
                 else
                     options->t = valueT;
                 break;
@@ -187,7 +197,7 @@ int parseOptions(int argc, char **argv, options *options)
                 return 1;
             case '?':
                 fprintf(stderr, "unknown option: -%c\n", optopt);
-                return 2;
+                return 1;
             }
         }
         if (optind < argc)
@@ -224,7 +234,7 @@ char *getFileName(const char *path)
 }
 
 char *getPerms(struct stat *s)
-        {
+{
     static char perms[4];
     int o = 0;
     int g = 0;
@@ -254,7 +264,7 @@ char *getPerms(struct stat *s)
 }
 
 int isSuitable(struct dirent *drnt, options *opt, struct stat status, int counter)
-        {
+{
     if (drnt != NULL && opt != NULL) {
         struct passwd *owner = NULL;
         char *fname = NULL;
@@ -354,21 +364,21 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *si
 {
     if (dir != NULL && options != NULL && dirpath != NULL && result != NULL) {
         struct dirent *drnt = NULL;
-        char *filepath = NULL;
+        char *filepath;
         DIR *nextDir = NULL;
         struct stat status;
 
         while ((drnt = readdir(dir)) != NULL) {
             filepath = malloc(strlen(*dirpath) + strlen(drnt->d_name) + 2);
 
-            if (filepath != NULL) {
-                strcpy(filepath, *dirpath);
-                strcat(filepath, "/");
-                strcat(filepath, drnt->d_name);
-            }
+            strcpy(filepath, *dirpath);
+            strcat(filepath, "/");
+            strcat(filepath, drnt->d_name);
+
 
             if (stat(filepath, &status) < 0) {
                 fprintf(stderr, "Status error: %s\n", filepath);
+                free(filepath);
                 return 4;
             }
             if (!S_ISDIR(status.st_mode)) {
