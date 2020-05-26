@@ -407,14 +407,14 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *si
 
 
             } else {
-                if (!(options->f - 1 > counter || options->t - 1 < counter)) {
+                if (!(options->f - 3 > counter || options->t -2 < counter)) {
                     if ((strcmp(drnt->d_name, ".") != 0) && (strcmp(drnt->d_name, "..") != 0)) {
                         if (options->hidden || isHidden(drnt->d_name) != 1) {
                             if ((nextDir = opendir(filepath)) != NULL) {
                                 getPaths(nextDir, options, &filepath, result, size, counter + 1);
                                 closedir(nextDir);
                             } else {
-                                fprintf(stderr, "Problem while entering directory: %s", filepath);
+                                fprintf(stderr, "Problem while entering directory: %s: Error: %s\n", filepath, strerror(errno));
                             }
                         }
                     }
