@@ -1,14 +1,14 @@
+#include <stdbool.h>
+#include <dirent.h>
+#include <errno.h>
+#include <getopt.h>
+#include <pwd.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <getopt.h>
-#include <stdbool.h>
-#include <pwd.h>
-#include <dirent.h>
-#include <sys/stat.h>
 #include <values.h>
-#include <errno.h>
 
 
 typedef struct options
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     int size = 0;
     char *path = ".";
 
-    int err = parseOptions(argc, argv, &options);
+    int error = parseOptions(argc, argv, &options);
 
     if (options.path != 0) {
         path = argv[options.path];
@@ -75,21 +75,23 @@ int main(int argc, char **argv)
         }
     }
 
-    if (err == -1)
-        return 0;
-    if (err > 0)
-        return err;
+    if (error != 0) {
+        if (error == -1)
+            return 0;
+        if (error > 0)
+            return error;
+    }
 
     if ((directory = opendir(path)) != NULL) {
-        err = getPaths(directory, &options, &path, &resultsArray, &size, 0);
+        error = getPaths(directory, &options, &path, &resultsArray, &size, 0);
         sort(&resultsArray, &size, &options);
         for (int i = 0; i < size; i++) {
             printf("%s%c", resultsArray[i], options.zero);
         }
         closeAndFree(directory, resultsArray, &size);
-        if (err != 0) {
+        if (error != 0) {
             fprintf(stderr, "Error");
-            return err;
+            return error;
         }
     } else {
         fprintf(stderr, "%s: No such file or directory.", path);
@@ -170,8 +172,7 @@ int parseOptions(int argc, char **argv, options *options)
                     fprintf(stderr, "%s: invalid number\n", optarg);
                     return 1;
                 }
-                else
-                    options->f = valueF;
+                options->f = valueF;
                 break;
             case 't':
                 errno = 0;
@@ -180,8 +181,7 @@ int parseOptions(int argc, char **argv, options *options)
                     fprintf(stderr, "%s: invalid number", optarg);
                     return 1;
                 }
-                else
-                    options->t = valueT;
+                options->t = valueT;
                 break;
             case 'a':
                 options->hidden = true;
@@ -310,8 +310,8 @@ void sort(char ***array, const int *arraySize, options *options)
         } else {
             operation = &compareNames;
         }
-
-        qsort(arr, *arraySize, sizeof(char *), operation);
+        if (arr != NULL)
+            qsort(arr, *arraySize, sizeof(char *), operation);
     }
 
 }
