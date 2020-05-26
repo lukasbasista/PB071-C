@@ -86,7 +86,6 @@ int main(int argc, char **argv)
     }
     if (err == -1)
         return 0;
-    fprintf(stderr, "%s", path);
     directory = opendir(path);
 
     if (directory != NULL) {
