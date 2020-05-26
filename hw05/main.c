@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <values.h>
 #include <errno.h>
-#include <unistd.h>
 
 
 typedef struct options
@@ -22,6 +21,7 @@ typedef struct options
     long t;
     bool hidden;
     char zero;
+    char *path;
 } options;
 
 
@@ -49,7 +49,7 @@ void sort(char ***array, const int *arraySize, options *options);
 
 void addToArray(char *filename, char ***array, int *arraySize);
 
-int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *resNum, int counter);
+int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *size, int counter);
 
 void closeAndFree(DIR *directory, char **array, const int *size);
 
@@ -57,28 +57,27 @@ int main(int argc, char **argv)
 {
     options options;
     optionsInit(&options);
-    char *path = ".";
     DIR *directory;
     char **resultsArray = NULL;
     int size = 0;
-    for (int i = 1; i < argc; ++i) {
-        if (strstr(argv[i], "/") != NULL)
-            path = argv[i];
-    }
-
-    if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
-        path[strlen(path) - 1] = '\0';
-    }
-    if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
-        path[strlen(path) - 1] = '\0';
-    }
 
     int err = parseOptions(argc, argv, &options);
+
+    char *path = options.path;
+
+    if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
+        path[strlen(path) - 1] = '\0';
+    }
+    if (strlen(path) > 1 && path[strlen(path) - 1] == '/') {
+        path[strlen(path) - 1] = '\0';
+    }
+
     if (err > 0) {
         return err;
     }
     if (err == -1)
         return 0;
+
     directory = opendir(path);
 
     if (directory != NULL) {
@@ -93,7 +92,7 @@ int main(int argc, char **argv)
             return err;
         }
     } else {
-        fprintf(stderr, "failed to open directory.");
+        fprintf(stderr, "%s: No such file or directory.", path);
         return 3;
     }
 
@@ -111,6 +110,7 @@ void optionsInit(options *option)
         option->t = LONG_MAX;
         option->hidden = false;
         option->zero = '\n';
+        option->path = ".";
     }
 }
 
@@ -188,6 +188,7 @@ int parseOptions(int argc, char **argv, options *options)
                 return 2;
             }
         }
+        options->path = argv[optind];
     }
     return 0;
 }
@@ -346,7 +347,7 @@ void addToArray(char *filename, char ***array, int *arraySize)
     }
 }
 
-int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *resNum, int counter)
+int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *size, int counter)
 {
     if (dir != NULL && options != NULL && dirpath != NULL && result != NULL) {
         struct dirent *drnt = NULL;
@@ -364,12 +365,12 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *re
             }
 
             if (stat(filepath, &status) < 0) {
-                fprintf(stderr, "Problem while getting stats: %s\nError: %s\n", filepath, strerror(errno));
+                fprintf(stderr, "Status error: %s\n", filepath);
                 return 4;
             }
             if (!S_ISDIR(status.st_mode)) {
                 if (isSuitable(drnt, options, status, counter)) {
-                    addToArray(filepath, result, resNum);
+                    addToArray(filepath, result, size);
                 } else {
                     free(filepath);
                 }
@@ -378,7 +379,7 @@ int getPaths(DIR *dir, options *options, char **dirpath, char ***result, int *re
                 if ((strcmp(drnt->d_name, ".") != 0) && (strcmp(drnt->d_name, "..") != 0)) {
                     if (options->hidden || isHidden(drnt->d_name) != 1) {
                         if ((nextDir = opendir(filepath)) != NULL) {
-                            getPaths(nextDir, options, &filepath, result, resNum, counter + 1);
+                            getPaths(nextDir, options, &filepath, result, size, counter + 1);
                             closedir(nextDir);
                         } else {
                             fprintf(stderr, "Problem while entering directory: %s\nError: %s\n", filepath, strerror(errno));
