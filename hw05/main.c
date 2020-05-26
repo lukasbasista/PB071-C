@@ -1,9 +1,10 @@
-#include <stdbool.h>
 #include <dirent.h>
+#include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
 #include <pwd.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,8 @@ void optionsInit(options *option);
 void showH();
 
 int parseOptions(int argc, char **argv, options *options);
+
+int onlyNumbers(const char *s);
 
 int isHidden(const char *file);
 
@@ -90,11 +93,11 @@ int main(int argc, char **argv)
         }
         closeAndFree(directory, resultsArray, &size);
         if (error != 0) {
-            fprintf(stderr, "Error");
+            fprintf(stderr, "Error\n");
             return error;
         }
     } else {
-        fprintf(stderr, "%s: No such file or directory.", path);
+        fprintf(stderr, "%s: No such file or directory.\n", path);
         return 3;
     }
 
@@ -156,12 +159,16 @@ int parseOptions(int argc, char **argv, options *options)
                 }
                 break;
             case 'm':
+                if (onlyNumbers(optarg) == 0 || strstr(optarg, "8") != NULL || strstr(optarg, "9") != NULL) {
+                    fprintf(stderr, "%s: is invalid mask.\n", optarg);
+                    return 1;
+                }
                 options->mask = optarg;
                 break;
             case 'u':
                 if ((options->user = getpwnam(optarg)) == NULL) {
                     options->user = NULL;
-                    fprintf(stderr, "%s: No such user.", optarg);
+                    fprintf(stderr, "%s: No such user.\n", optarg);
                     return 1;
                 }
                 break;
@@ -178,7 +185,7 @@ int parseOptions(int argc, char **argv, options *options)
                 errno = 0;
                 long valueT = strtol(optarg, &endpt, 10);
                 if (*endpt != '\0' || errno != 0) {
-                    fprintf(stderr, "%s: invalid number", optarg);
+                    fprintf(stderr, "%s: invalid number\n", optarg);
                     return 1;
                 }
                 options->t = valueT;
@@ -193,7 +200,7 @@ int parseOptions(int argc, char **argv, options *options)
                 showH();
                 return -1;
             case ':':
-                fprintf(stderr, "option needs a value -%c!\n", optopt);
+                fprintf(stderr, "option requires an argument -%c!\n", optopt);
                 return 1;
             case '?':
                 fprintf(stderr, "unknown option: -%c\n", optopt);
@@ -204,6 +211,15 @@ int parseOptions(int argc, char **argv, options *options)
             options->path = optind;
     }
     return 0;
+}
+
+int onlyNumbers(const char *s)
+{
+    while (*s) {
+        if (isdigit(*s++) == 0)
+            return 0;
+    }
+    return 1;
 }
 
 int isHidden(const char *file)
@@ -277,7 +293,7 @@ int isSuitable(struct dirent *drnt, options *opt, struct stat status, int counte
             free(fname);
         }
         if (opt->mask != NULL) {
-            if (strcmp(opt->mask, getPerms(&status)) != 0)
+            if (strtol(opt->mask, NULL, 8) != strtol(getPerms(&status), NULL, 8))
                 return 0;
         }
         if (opt->user != NULL) {
