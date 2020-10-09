@@ -1,0 +1,147 @@
+---
+title: "HW01: Ascii85"
+layout: "homework"
+list-of-files: ["ascii85.c"]
+publish: now
+publish-solution: now
+deadline-early: 2020-03-07 24:00
+deadline-final: 2020-03-11 24:00
+authors:
+  - Petr Pilař
+  - Tobiáš Kamenický: 409735@mail.muni.cz
+editors:
+  - Radoslav Sabol: 469331@mail.muni.cz
+  - Vojtěch Škaroupka: 485232@mail.muni.cz
+  - Adam Štěpánek: 469242@mail.muni.cz
+---
+
+Doplnění zadání:
+
+**2020-02-25 11:20**::
+Zpřesněna kontrola programu na chybných vstupech.
+
+**2020-03-01 20:55**::
+Vyměněn příkaz `printf ...` za `echo -en ...`, jenž nevyžaduje ošetřování formátovacích značek.
+
+**2020-03-10 15:20**::
+Deadline byl posunutý o jeden den v reakci na zrušení konzultací.
+
+== Představení úkolu
+
+link:https://en.wikipedia.org/wiki/Ascii85[Ascii85] (někdy též nazývané Base85) je kódování, které bylo vytvořeno primárně za účelem konverze binárních dat na data textová. Tato konverze umožňuje jejich přenos přes výhradně textové protokoly. Jelikož některé protokoly umožňují používání pouze vybraných tisknutelných znaků, je rozsah výstupních symbolů kódování Ascii85 omezen.
+
+== Zadání
+
+Vaším úkolem bude vytvořit program schopný kódovat a dekódovat data ze standardního vstupu pomocí algoritmu Ascii85.
+
+Ascii85 každým 4 bajtům přiřadí bajtů 5. Postup je následující: Vstupní 4 bajty převedeme na jedno číslo N (tak, že ony 4 bajty "poskládáme za sebe"). Z tohoto čísla N nejprve vezmeme zbytek po dělení 85, čímž získáme náš první mezivýpočet, poté se N celočíselně vydělí 85 (tento proces se celkem opakuje pětkrát, čímž získáme 5 čísel). Ke každému takto získanému číslu přičteme 33. Tím jsme získali ASCII kódy výsledných pěti znaků. Kód prvního znaku je přitom poslední takto získané číslo.
+
+TIP: Zamyslete se nad tím, které numerické typy mají dostatečný rozsah -- zaručují vám, že se do nich každé vstupní číslo `N` vejde.
+
+=== Příklad
+
+Vstup: "Lore"
+
+[options="header",role="table table-sm table-bordered table-hover"]
+|=========================================================
+| Vstupní bajt | Dekadické vyjádření | Binární vyjádření
+| L | 76  | 01001100
+| o | 111 | 01101111
+| r | 114 | 01110010
+| e | 101 | 01100101
+|=========================================================
+
+`N` je tedy v binární soustavě vyjádřeno jako `01001100011011110111001001100101`, v dekadické je to `1282372197`.
+
+[cols="<2,>3",options="header",role="table table-sm table-bordered table-hover"]
+|===========================================
+| Zbytek po dělení 85 | Výsledek dělení 85
+| 62 | 15086731
+| 81 | 177490
+| 10 | 2088
+| 48 | 24
+| 24 | 0
+|===========================================
+
+Výsledkem tedy bude 5 bajtů vyjádřených znaky s ASCII označením 57, 81, 43, 114, 95, což jsou znaky `'9'`, `'Q'`, `'+'`, `'r'`, `'_'`.
+
+Výstup: ``"9Q+r_"``
+
+== Požadavky
+
+* Váš program musí jít přeložit a fungovat dle link:https://www.fi.muni.cz/pb071/info/homeworks.html#jak-kontr-kompiluje[požadavků pro zkompilování na aise].
+
+=== Kódování
+
+* Funkce `int encode(void)` *zakóduje* data načtená ze standardního vstupu pomocí Ascii85 a vypíše je na standardní výstup.
+** Ze standardního vstupu přestaňte číst, jakmile funkce pro čtení signalizuje konec vstupu hodnotou `EOF` (End of File).
+** Pokud vstup skončí, aniž by z něj program načetl kompletní čtveřici bajtů, doplňte ji zprava znaky `'\0'`.
+** Dojde-li k chybě, funkce vrátí nenulové kladné číslo, jinak vrátí `0`.
+** Funkce musí na konec výstupu zapsat znak nového řádku, `'\n'`.
+
+NOTE: Funkce `encode` vrací hodnotu typu `int` především kvůli konzistenci s funkcí `decode` (viz níže). Jestliže nebudete pracovat s žádnými zdroji, `encode` by měla vždy vracet `0`.
+
+=== Dekódování
+
+* Funkce `int decode(void)` *dekóduje* data načtená ze standardního vstupu, která byla zakódována pomocí Ascii85, a vypíše je na standardní výstup.
+** Ze standardního vstupu přestaňte číst, jakmile funkce pro čtení signalizuje konec vstupu hodnotou `EOF` (End of File).
+** Při dekódování neodstraňujte z konce výstupu znaky `'\0'`. Nemůžete vědět, jestli původní vstup končil znaky `'\0'`, jestli byly doplněny při zakódování, nebo jestli je vstupem např. obrázek ve formátu PNG, kde se nulové bajt běžně vyskytují.
+** Funkce musí při čtení ignorovat bílé znaky (např. `'\n'`).
+** Pokud načtený vstup nemohl vzniknout použitím Ascii85 (jeho délka není dělitelná pěti nebo obsahuje bajty, které Ascii85 nevyužívá a které nejsou bílé), funkce vrátí nenulové kladné číslo, jinak vrátí `0`.
+
+NOTE: Kostra řešení je navržena tak, že funkce `encode` je volána z funkce `main`, jestliže je program spuštěn bez přepínačů, nebo právě s přepínačem `-e`. Podobně, `decode` je z `main` volána, pokud je program spuštěn právě s přepínačem `-d`.
+
+== Příklady
+
+=== Kódování
+
+[options="header",role="table table-sm table-bordered table-hover"]
+|===========================================
+| Vstup | Výstup
+| `Man` | `9jqo>`
+| `Donec nec euismod orci` | `6uQsS@j#Z#@j#?*Ble-0A0>f2@qboC`
+| `Lorem ipsum dolor sit amet, consectetur adipiscing elit` | ``9Q+r_D'3P3F*2=BA8c:&EZfF;F<G"/ATTIG@rH7+ARfgnFEMUH@:X(kBldcuDJ()'Ch[tk``
+|===========================================
+
+=== Dekódování
+
+[options="header",role="table table-sm table-bordered table-hover"]
+|===========================================
+| Vstup | Výstup
+| `6#C1T` | `Amet`
+| `:i]uUF(K62+Dbt*DfTr6F!,"-B5VF)F(oJ6E+Nj%ASuU$F)c>6` | `Praesent lobortis dignissim pellentesque`
+|===========================================
+
+== Bonusové rozšíření (1 bod)
+
+Až 1 bonusový bod obdrží ti, kteří správně použijí numerické typy s pevnou velikostí. Tyto typy se nachází v hlavičce `stdint.h`. Mezi typy s pevnou velikostí patří například `uint8_t` (8-bitové číslo bez znaménka) nebo `int32_t` (32-bitové číslo se znaménkem).
+
+== Poznámky
+
+* Pro čtení doporučujeme použít bezparametrickou funkci https://en.cppreference.com/w/c/io/getchar[`getchar`]. Tato
+  funkce vrací buď jeden znak ze standardního vstupu, nebo `EOF`, pokud už žádné další znaky není možné přečíst.
+  Návratovým typem této funkce je `int`, aby bylo možné rozlišit `EOF` od vstupních bajtů.
+
+* Zda je znak bílý, lze ověřit pomocí funkce link:https://en.cppreference.com/w/c/string/byte/isspace[`isspace`].
+
+* Pro testování vaší implementace můžete na Linuxu použít např. příkaz
++
+[source,bash]
+----
+echo -en 'Donec nec euismod orci' | ./ascii85
+----
++
+Na Windows doporučujeme použít
+link:https://www.fi.muni.cz/pb071/man/#wsl[Windows Subsystem for Linux]
+nebo link:https://www.fi.muni.cz/pb071/man/#git-for-windows-verzovac%C3%AD-syst%C3%A9m[Git Bash].
+
+* Kontrola bude probíhat porovnáváním výstupů. Dejte si tedy pozor, ať nevypisujete nic navíc.
+** [.add]#V případě chybných vstupů není kontrolován standardní výstup programu, ale pouze, zda funkce `encode`
+   (resp. `decode`) vrací nenulové kladné číslo.#
+** [.add]#Na standardní chybový výstup nic nevypisujte. O to se postará funkce `main` z kostry. Tuto funkci **neupravujte**.#
+
+* Své vypracování můžete porovnat se vzorovým, které naleznete na aise. Umístění vzoru je následující:
++
+----
+/home/kontr/pb071/hw01/ascii85
+----
