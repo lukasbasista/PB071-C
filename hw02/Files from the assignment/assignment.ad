@@ -1,0 +1,258 @@
+---
+title: "HW02: Texas Hold'em Poker"
+layout: "homework"
+list-of-files: ["main.c"]
+publish: now
+publish-solution: now
+deadline-early: 2020-03-28 24:00
+deadline-final: 2020-03-31 24:00
+authors:
+  - David Klaška: 374303@mail.muni.cz
+editors:
+  - Patrícia Andicsová: 485475@mail.muni.cz
+  - Samuel Obuch: 456163@mail.muni.cz
+  - Daniel Zaťovič: daniel.zatovic@mail.muni.cz
+use-mathjax: 1
+---
+
+{% include_relative cards.ad %}
+
+Doplnění zadání:
+
+**2020-03-24**::
+Informace o kompilaci s přepínačem `-O2` na Aise.
+
+**2020-03-29**::
+Upřesnění požadavků na chybový výstup a ukončení programu.
+
+== Představení úkolu
+
+V této úloze se budeme věnovat světově nejpopulárnější karetní hře --
+pokeru. Tato hra je známá ve spoustě variant. My se zde budeme zabývat
+tou patrně nejrozšířenější, __Texas Hold'em Poker__, kdy každý hráč drží
+v ruce dvě karty a na stůl je rozdáno (až) pět karet společných pro všechny
+hráče.
+
+== Zadání
+
+Vaším úkolem bude napsat program, který bude komunikovat s uživatelem
+prostřednictvím příkazové řádky. Váš program bude samozřejmě muset umět
+porovnávat mezi sebou jednotlivé karetní kombinace.
+
+Jádrem problému bude algoritmus rozhodující, který ze dvou hráčů
+vyhrál, bude-li znát obě karty obou hráčů i všech pět karet ležících na stole.
+
+=== Pravidla hry
+
+NOTE: Podrobnější popis pravidel naleznete např. na Wikipedii v článku
+link:https://en.wikipedia.org/wiki/Texas_hold_%27em[Texas Hold'em Poker]
+nebo
+link:https://en.wikipedia.org/wiki/List_of_poker_hands[seznamu karetních kombinací pokru].
+
+* Každý hráč má k dispozici _dvě soukromé_ karty a _pět společných_ karet, jež
+jsou vyloženy na stole. Z těchto sedmi karet sestavuje nejsilnější
+možnou kombinaci _pěti_ karet. Nejsilnější pětikaretní kombinace vyhrává.
+* Nejvyšší kartou je {CAs} (výjimkou je postupka, kde ji lze použít
+jako kartu s hodnotou 1) -- následují {CKs}, {CQs}, {CJs}, {C10s}, {C9s}, {C8s},
+{C7s}, {C6s}, {C5s}, {C4s}, {C3s}, {C2s}.
+* Všechny barvy karet jsou _rovnocenné_.
+
+**Výherní kombinace** od nejvyšší po nejnižší jsou následující:
+
+[role="list-group"]
+* *_Straight flush_* je čistá postupka (všechny karty mají stejnou barvu, např.
+{C7d} {C6d} {C5d} {C4d} {C3d}).
+V případě, že mají oba hráči _straight flush_, vítěz je ten, kdo má tuto
+postupku zakončenou vyšší kartou. V případě shody dochází k remíze.
++
+{CAs} se může v čisté postupce vyskytovat jako karta nejvyšší (takové postupce
+se říká *_royal straight flush_*), nebo jako karta nejnižší (takové postupce
+se říká *_steel wheel_*).
+
+* *_Four of a kind_* (_poker_) je čtveřice, tzn. čtyři karty stejné hodnoty
+(např. {C5s} {C5h} {C5d} {C5c}). V případě, že mají oba hráči
+_four of a kind_, rozhoduje o vítězi hodnota čtveřice. V případě shody
+rozhoduje hodnota páté (doplňující) karty. Shoduje-li se i hodnota
+doplňující karty, dochází k remíze.
+
+* *_Full house_* je trojice a dvojice (např. {C7s} {C7c} {C7h} {C10h} {C10d}).
+V případě, že mají oba hráči _full house_, rozhoduje o vítězi hodnota trojice.
+V případě shody rozhoduje hodnota dvojice. Shoduje-li se i hodnota dvojice,
+dochází k remíze.
+
+* *_Flush_* je pět karet libovolné hodnoty, ale stejné barvy (např.
+{CAc} {C10c} {C8c} {C7c} {C2c}). V případě, že mají oba hráči _flush_,
+rozhoduje nejvyšší karta. Shoduje-li se hodnota nejvyšší karty, rozhoduje
+druhá nejvyšší karta atd. Mají-li oba hráči pětice se stejnými hodnotami
+(seřazenými od nejvyšší karty po nejnižší), dochází k remíze.
+
+* *_Straight_* je špinavá postupka (např. {C9d} {C8h} {C7c} {C6h} {C5s}).
+V případě, že mají oba hráči _straight_, vítěz je ten, kdo má tuto postupku
+zakončenou vyšší kartou. V případě shody dochází k remíze.
++
+Stejně jako v čisté postupce, i zde se {CAs} může vyskytovat jako karta nejvyšší
+(takové postupce se říká *_broadway straight_*), nebo jako karta nejnižší
+(takové postupce se říká *_baby straight_*).
+
+* *_Three of a kind_* je trojice (např. {CKs} {CKh} {CKc}).
+V případě, že mají oba hráči _three of a kind_, rozhoduje o vítězi hodnota
+trojice. V případě shody rozhoduje hodnota vyšší ze dvou doplňujících karet.
+Shodují-li se hodnoty vyšších doplňujících karet, rozhodují ty nižší.
+Shodují-li se i ty, dochází k remíze.
+
+* *_Two pair_* jsou dvě dvojice (např. {C4s} {C4h} {C2s} {C2c}).
+V případě, že mají oba hráči _two pair_, rozhoduje o vítězi hodnota vyšší
+dvojice. V případě shody rozhoduje hodnota nižší dvojice. Shodují-li se
+i hodnoty nižších dvojic, rozhodují hodnoty pátých (doplňujících) karet.
+Shodují-li se i ty, dochází k remíze.
+
+* *_Pair_* je dvojice (např. {C5h} {C5d}).
+V případě, že mají oba hráči _pair_, rozhoduje o vítězi hodnota dvojice.
+V případě shody rozhoduje nejvyšší ze tří doplňujících karet. Shoduje-li se
+nejvyšší z doplňujících karet, rozhoduje druhá nejvyšší. Pokud se shoduje
+i ta nejnižší, dochází k remíze.
+
+* *_High card_* je vysoká karta. Pokud ani jeden z hráčů nemá lepší
+kombinaci, rozhoduje o vítězi nejvyšší z pěti karet. V případě shody
+rozhoduje druhá nejvyšší atd. Mají-li oba hráči pětice se stejnými
+hodnotami (seřazenými od nejvyšší karty po nejnižší), dochází k remíze.
+
+=== Formát vstupu a výstupu
+
+Karty budou reprezentovány dvojicí znaků:
+
+* první z nich určuje hodnotu; `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `T`,
+`J`, `Q`, `K`, `A` pro po řadě {C2s}, {C3s}, ..., {C10s}, {CJs}, {CQs}, {CKs}, {CAs},
+* druhý barvu; `h`, `d`, `s`, `c` pro po řadě [.text-danger]#♥# (srdce, _hearts_),
+[.text-danger]#♦# (káry, _diamonds_), [.text-dark]#♠# (piky, _spades_),
+[.text-dark]#♣# (kříže, _clubs_).
+
+Vstup bude sestávat z několika po sobě jdoucích instancí (situací), výstup pak z
+odpovědí na jednotlivé instance. Program tedy neskončí hned po vyřešení jediné
+instance, ale až když se na vstupu nenachází žádná další instance (_End of File_).
+
+=== Porovnávání dvou hráčů
+
+Vstupní instance budou sestávat ze tří řádků:
+
+* na prvním budou **dvě** karty jednoho hráče,
+* na druhém **dvě** karty druhého hráče,
+* na třetím **pět** karet ležících na stole
+
+Váš program odpoví pro každou instanci jediným znakem na jednom (samostatném) řádku:
+
+* `W` (_win_), pokud první hráč vyhrál,
+* `D` (_draw_), pokud nastala remíza,
+* `L` (_lose_), pokud první hráč prohrál.
+
+Karty jsou na jednom řádku oddělené mezerou.
+Každý řádek na výstupu je ukončen znakem pro nový řádek.
+
+=== Korektnost vstupu
+
+Program musí ověřit, že formát vstupu odpovídá popisu výše. Pro jednoduchost
+**nemusíte** vyžadovat přesně jednu mezeru, stačí ověřit následující
+podmínky:
+
+* Karta má správný tvar a je v aktuální instanci jedinečná.
+* Mezi kartami na řádku je __alespoň jeden__ bílý znak (nemusí být nutně mezera).
+* Na řádku se nachází očekávaný počet karet a pak znak `\n`.
+* Instance je kompletní, tj. pokud se povede načíst první řádek, pak
+  musí být na vstupu i zbylé řádky instance.
+
+Pokud některá podmínka neplatí, vypište nějakou smysluplnou zprávu
+ukončenou znakem `\n` na **standardní chybový výstup**
+voláním funkce `fprintf()` s prvním argumentem `stderr`.
+[.add]#Tato zpráva musí být pouze na jediném řádku, tzn. pokud vypisujete
+část vstupu, dejte si pozor, aby program nevypsal další `'\n'` uvnitř zprávy.#
+[.add]#Další instance se po chybě zpracovávat nesmí, program ukončete
+s libovolným návratovým kódem.#
+
+Příklad použití funkce `fprintf()`:
+
+[source,c]
+----
+if (!card_is_valid(card))
+    fprintf(stderr, "%s: invalid card\n", card);
+----
+
+Tato funkce se chová jako `printf(FORMAT, ...)`, ale výstup se objeví
+na chybovém výstupu. Text zpráv je na vás, ale měly by dávat smysl
+a musí být jasné, proč došlo k chybě. Například `error` není vhodná zpráva.
+
+== Kompilace
+
+[.add]#Tato část byla doplněna 2020-03-24.#
+
+Některé testy naostro zkouší velký počet instancí (až 2¹⁸). Proto se tyto
+testy kompilují s přepínačem `-O2`, který zapne některé optimalizace.
+
+Je však **nezbytné** vyzkoušet si kompilaci řešení na Aise i s tímto
+přepínačem. Kompilátor totiž může při optimalizaci kódu odhalit problémy,
+pro které vygeneruje další varování.
+
+[source,bash]
+----
+# Nejdřív vyzkoušejte kompilaci běžným způsobem
+login@aisa:~$ gcc -std=c99 -pedantic -Wall -Wextra -Werror -o poker main.c
+
+# Pak vyzkoušejte kompilaci s -O2
+login@aisa:~$ gcc -O2 -std=c99 -pedantic -Wall -Wextra -Werror -o poker main.c
+----
+
+== Ukázkové příklady
+
+Pro vstup:
+
+[source]
+----
+3d 3h
+Kc Qs
+Qd 8s 2c 3c Kh
+4s 8d
+5c 8h
+7c 7h Ac Kd 2d
+As Ad
+2h 3h
+Ac 4h 5h Ks Ah
+----
+
+je očekávaným výstupem
+
+[source]
+----
+W
+D
+L
+----
+
+Komentář:
+
+* V prvním případě má první hráč trojici trojek ({C3d} {C3h} {C3c}),
+  zatímco druhý jen dva páry ({CKc} {CKh} {CQs} {CQd}).
+* V druhém případě první hráč hraje {C7c} {C7h} {CAc} {CKd} {C8d},
+  druhý hráč hraje {C7c} {C7h} {CAc} {CKd} {C8h} (porovnává se vždycky
+  pouze pět nejlepších karet, v tomto případě pár a tři zbylé nejvyšší karty).
+  Pár {C7c} {C7h} je pro oba hráče společný, a zbytek karet má stejnou hodnotu,
+  proto dochází k remíze.
++
+To, že jeden drží {C5c}, zatímco druhý {C4s}, je již
+  nepodstatné.
+* Ve třetím případě má první hráč „jen“ esový poker ({CAs} {CAd} {CAc} {CAh}),
+  zatímco druhý má (nejnižší možnou) čistou postupku {C5h} {C4h} {C3h} {C2h} {CAh}.
+
+== Tipy a poznámky
+
+* Pro případ, že byste měli nejasnosti týkající se formátu vstupu a výstupu
+  nebo srovnávání jednotlivých karetních kombinací, můžete srovnat
+  chování vašeho programu se vzorovým řešením, které je vám k dispozici
+  na Aise na `/home/kontr/pb071/hw02/poker`.
++
+Vzorová implementace s přepínačem `-e` (_explain_) navíc vysvětlí na výstupu,
+který hráč má jakou kombinaci.
+* Výstup vašeho programu bude testován strojově, nesmí se tedy lišit ani
+  v jediném znaku.
+* K otestování korektnosti vstupu stačí vhodně použít funkci `scanf()`.
+Doporučujeme si přečíst link:https://en.cppreference.com/w/c/io/fscanf[dokumentaci].
+* Časová efektivita vašeho programu je také důležitá, proto si dávejte pozor,
+  aby váš program nebyl zbytečně pomalý.
