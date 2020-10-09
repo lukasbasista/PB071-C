@@ -1,5 +1,5 @@
 ### Authors
- Petr Pilař
+ Petr Pilař 
  Tobiáš Kamenický
  
 ### Editors
