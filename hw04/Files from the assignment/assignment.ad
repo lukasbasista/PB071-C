@@ -1,0 +1,195 @@
+---
+title: "HW04: Prohledávání dat z projektu DIMES"
+layout: "homework"
+list-of-files: ["main.c"]
+publish: 2020-04-20
+publish-solution: now
+deadline-early: 2020-05-02 24:00
+deadline-final: 2020-05-07 24:00
+authors:
+  - Lubomír Sedlář: lsedlar@mail.muni.cz
+editors:
+  - Miroslav Jaroš: 374038@mail.muni.cz
+  - Samuel Gorta: 456658@mail.muni.cz
+
+---
+
+Doplnění zadání:
+
+2020-04-25 09:44::
+Poznámka ke garanci korektnosti vstupu.
+
+2020-05-01 22:20::
+Posun finálního termínu odevzdání.
+
+
+== Představení úkolu
+
+Při odesílání dat přes Internet je vždy třeba najít cestu od odesílatele k příjemci. Toto routování je rozděleno do dvou úrovní. V první úrovni se hledá cesta v rámci jednoho link:http://cs.wikipedia.org/wiki/Autonomn%C3%AD_syst%C3%A9m[autonomního systému], na druhé úrovni se routuje mezi jednotlivými autonomními systémy. V tomto úkolu vytvoříte program, který bude hledat nejkratší cesty mezi autonomními systémy.
+
+Protože Internet je dynamický a neustále se mění, vznikl link:https://web.archive.org/web/20110727120610/http://www.netdimes.org/[projekt DIMES] (dnes už neaktivní), který se ho snažil mapovat. Na link:https://web.archive.org/web/20110727120610/http://www.netdimes.org/new/?q=node/65[stránce s daty] jsou archivované rozsáhlé soubory s daty popisujícími topologii Internetu. Nás budou zajímat první dva sloupce tabulky, tedy soubory ``ASNodes*`` a ``ASEdges*``, které obsahují informace o autonomních systémech a spojeních mezi nimi.
+
+
+== Zadání
+
+Cílem tohoto úkolu je napsat program, který načte soubory s popisem autonomních systémů a vytvoří orientovaný graf, kde uzly budou reprezentovat jednotlivé systémy a hrany grafu budou zastupovat spojení mezi těmito systémy.
+
+V této reprezentaci dat potom program najde nejkratší cestu mezi dvěma danými uzly a zapíše ji do souboru ve speciálním formátu -- tímto formátem bude jazyk používaný programem link:http://graphviz.org/[GraphViz] pro vykreslování diagramů a grafů.
+
+Pro usnadnění práce máte k dispozici kostru s implementací struktury grafu a haldy. Tyto poskytnuté funkce nemusíte využít, nicméně vám mohou výrazně usnadnit řešení tohoto úkolu. Při odevzdání se váš program bude kompilovat s těmito soubory, nedefinujte proto žádné stejně pojmenované funkce nebo datové struktury. V žádném případě také neměňte poskytnuté soubory, změny by se při odevzdávání neprojevily.
+
+
+=== Popis dat
+
+Oba vstupní soubory jsou ve tvaru CSV (Comma separated values, hodnoty oddělené čárkou). Každý řádek souboru popisuje jeden vrchol (resp. hranu). Jednotlivé položky na řádku jsou odděleny čárkou bez mezer. V hodnotě žádného atributu se čárka vyskytovat nemůže.
+
+
+=== Soubor ASNodes
+
+* identifikátor uzlu
+* jméno uzlu (nepoužité)
+* datum nalezení uzlu
+* datum posledního vidění uzlu
+* počet příchozích hran
+* počet odchozích hran
+* poloměr autonomního systému
+
+Z tohoto souboru nás zajímá pouze identifikátor uzlu. Pokud si najdete dokumentaci k tomuto souboru, může vás překvapit, že tam jsou sloupce s počty hran v opačném pořadí, než je uvedeno tady. V původním pořadí u zhruba 90 % vrcholů tyto počty nesedí.
+
+
+=== Soubor ASEdges
+
+* zdrojový uzel
+* cílový uzel
+* datum nalezení hrany
+* minimální čas
+* maximální čas
+* datum posledního vidění hrany
+* data z DIMES obsahují navíc ještě jeden nepopsaný sloupec
+
+Z tohoto souboru potřebujeme počáteční i koncový uzel hrany a minimální čas.
+
+
+=== Výstupní formát
+
+
+Výstupní soubor bude opět čistě textový. Soubor mít následující tvar:
+
+----
+  digraph {
+      ...
+  }
+----
+
+Místo tří teček bude ale obsahovat řádky ve tvaru ``Z_UZLU -> DO_UZLU [label=DELKA];``, kde místo `Z_UZLU` a `DO_UZLU` budou identifikátory dvou uzlů, mezi kterými chceme vykreslit hranu, a `DELKA` bude délka této hrany (v našem případě minimální čas). Formátovací řetězec by měl tedy být ve tvaru
+
+----
+"\t%u -> %u [label=%u];\n"
+----
+
+
+== Požadavky
+
+* Program bude na příkazové řádce vyžadovat právě 4 nebo 5 argumentů. Budou to postupně název souboru s definicí uzlů, název souboru s definicemi hran, číslo výchozícho uzlu a číslo uzlu, do kterého se hledá nejkratší cesta a nakonec název souboru, do kterého se má zapsat výsledek. Pokud pátý argument (název výstupního souboru) nebude přítomen, program vypíše cestu na standardní výstup (formát zůstává stejný).
+* Pokud program dostane špatný počet argumentů, vypíše na standardní chybový výstup informaci o používání tohoto programu a skončí s nenulovou návratovou hodnotou.
+* Program nejprve načte všechny vrcholy a přidá je do grafu.
+* Potom program načte hrany a přidá je do grafu.
+* Pokud se kterýkoli krok nepodaří, vypíšete chybovou hlášku (na ``stderr``) a skončíte s nenulovým návratovým kódem.
+* V takto vytvořeném grafu najdete nejkratší cestu pomocí link:++https://en.wikipedia.org/wiki/Dijkstra's_algorithm++[Dijkstrova algoritmu].
+* Jako délky hran uvažujte položku ``mindelay``, tj. minimální čas přechodu po hraně.
+* Pokud neexistuje některý ze zadaných vrcholů nebo cesta mezi nimi, napište tuto informaci na standardní chybový výstup a ukončete program s nenulovou návratovou hodnotou. Soubor v takovém případě vytvářet nemusíte.
+* Pokud bude požadována cesta z uzlu do sebe sama, vypište soubor jako pro každou jinou cestu, pouze v něm nebude určena žádná hrana.
+* Nalezenou cestu zapište v požadovaném formátu do souboru nebo na standardní výstup.
+
+Na počítači ``aisa`` je k dispozici vzorové řešení: ``/home/kontr/pb071/hw04/graph-traverse``. Také si můžete stáhnout link:./dimes_priklady.zip[vzorová data]. Vhodné je také vyzkoušet program na datech projektu DIMES. Neměl by mít výkonostní problémy ani při práci s relativně velkým grafem (20 000 vrcholů, 80 000 hran).
+
+
+== Poznámky
+
+* Program můžete na aise přeložit spuštěním příkazů
++
+----
+cmake -S . -Bbuild
+make -C build
+----
++
+Připravený archiv mimo jiné obsahuje i soubor CMakeList.txt s definicemi pravidel pro překlad.
+* Příkazem
++
+----
+dot -Tpng výstup_programu.dot -oobrazek.png
+----
++
+si můžete prohlédnout vytvořený graf.
+* [.rm]#Můžete předpokládat, že žádný řádek v žádném vstupním souboru nebude delší než 200 znaků a že soubory budou mít korektní obsah – tedy budou obsahovat patřičně formátované řádky s čísly tam, kde jsou čísla očekávána. Formát souboru proto nemusíte kontrolovat.#
++
+Poznámky ke garanci korektnosti vstupu vizte link:https://is.muni.cz/auth/discussion/predmetove/fi/jaro2020/PB071/hw04_assignment/-/100768345/[tento příspěvek v ISu].
+* Také můžete předpokládat, že bude existovat nejvýše jedna nejkratší cesta. Pro data z DIMES to sice neplatí, ale v testech se neobjeví žádný soubor s více nejkratšími cestami.
+* Nezapomeňte testovat návratové hodnoty funkcí.
+* Dodané zdrojové soubory i příklady dat používají unixové konce řádků, takže pro jejich prohlížení ve Windows budete potřebovat nástroj, který s takovými oddělovači umí pracovat (Pspad, Notepad++, …).
+* Chybové hlášky mohou mít libovolné znění, ale je nutné je ukončit novým řádkem.
+
+
+== Popis dodaných zdrojových kódů
+
+NOTE: Přímo v dodané kostrě je u každé funkce dokumentační komentář s podrobnějším popisem chování, argumentů a návratové hodnoty. Přečtení dokumentačních komentářů je pro práci s dodanými soubory téměř nezbytné. link:./doc/[Vygenerovaná dokumentace] je dostupná k prohlížení on-line, popř. ji můžete vytvořit sami příkazem ``make doc``.
+
+V hlavičkovém souboru ``graph.h`` jsou definované typy pro graf (``Graph``), uzel v něm (`Node`) a struktura pro hranu (``struct edge``). Oba zmíněné typy jsou sice interně realizovány jako struktury, ovšem jejich položky jsou skryty a neměli byste se snažit k nim přistupovat (viz link:https://en.wikipedia.org/wiki/Opaque_data_type[neprůhledné typy] na Wikipedii). Všechny manipulace s grafem a vrcholy by měly probíhat pomocí poskytnutých funkcí. K položkám hrany můžete přistupovat přímo (hrana je pouze struktura, nikoli typ).
+
+Funkce z tohoto souboru lze rozdělit na dvě skupiny: funkce začínající prefixem ``node_`` zpřístupňují informace o vrcholu, funkce z prefixem ``graph_`` manipulují s grafem.
+
+* ``node_get_id()`` zjistí identifikační číslo daného uzlu
+* ``node_get_n_outgoing()`` vrátí počet odchozích hran z tohoto uzlu
+* ``node_get_edges()`` vrátí pole hran vycházejících z tohoto uzlu; velikost pole lze zjistit předchozí funkcí
+* ``node_get_distance()`` při prohledávání grafu vrátí vzdálenost daného uzlu od počátečního uzlu, nekonečno je signalizováno hodnotou ``UINT_MAX`` definovanou ve standardním hlavičkovém souboru ``limits.h``
+* ``node_get_previous()`` vrátí uzel, který na nalezené nejkratší cestě předchází danému uzlu; pro první nebo nedosažitelný uzel vrací ``NULL``
+
+* ``graph_new()`` vytvoří nový prázdný graf
+* ``graph_free()`` uvolní veškerou pamět použitou grafem, po jejím volání už není možné přistupovat k uzlům a hranám
+* ``graph_insert_node()`` vloží do grafu nový uzel s daným číslem
+* ``graph_insert_edge()`` vloží do grafu hranu se zadanou délkou mezi dva dané uzly, oba uzly už musí v grafu existovat
+* ``graph_get_node()`` najde v grafu uzel se zadaným číslem (vzhledem k implementaci funkce není vhodné střídat volání této funkce se vkládáním uzlů -- bylo by to pomalé)
+
+V hlavičkovém souboru ``heap.h`` je další pomocný typ ``Heap`` (binární halda). Tato datová struktura bude obsahovat uzly nějakého grafu, s nimiž efektivně umožňuje provádět potřebné operace. Nevytváří ale kopii těchto uzlů, pracuje s daty uloženými v grafu, takže po celou dobu práce s haldou musí zůstat graf neuvolněný.
+
+* ``heap_new_from_graph()`` vytvoří novou haldu a vloží do ní všechny vrcholy daného grafu; zároveň také nastaví všem uzlům nekonečnou vzdálenost a předchůdce ``NULL``.
+* ``heap_free()` uvolní paměť použitou haldou
+* ``heap_is_empty()` testuje, jestli je halda prázdná
+* `heap_extract_min()` z haldy odstraní uzel s minimální vzdáleností a vrátí jej
+* `heap_decrease_distance()` nastaví uzlu novou vzdálenost a předchůdce; vzdálenost se musí snížit!
+
+
+Kromě implementací uvedených funkcí v souborech ``graph.c`` a `heap.c` dodaný archiv navíc obsahuje třetí hlavičkový soubor: definice sdílené oběma soubory `.c`. S tímto souborem nijak napracujte, neobsahuje nic, co by vám mohlo pomoci s implementací úkolu.
+
+
+=== Vzdálenost uzlu
+
+Při hledání nejkratší cesty je třeba sledovat vzdálenost z počátečního uzlu do všech ostatních uzlů. Tato vzdálenost také musí být nekonečná pro nedosažitelné uzly, což budeme reprezentovat hodnotou ``UINT_MAX``. V okamžiku, kdy z uzlů grafu vytvoříte haldu, se všem uzlům nastaví nekonečná vzdálenost a žádný předchůdce. Pomocí funkce `heap_decrease_distance` můžete nastavenou vzdálenost zmenšovat. Zároveň se změnou vzdálenosti také nastavíte nového předchůdce.
+
+
+=== Detaily implementace
+
+Tato část obsahuje lehké shrnutí, jak dodaná knihovna funguje. Pro vyřešení úkolu to ovšem nejsou nezbytné informace.
+
+Interně knihovna alokuje každý uzel samostatně. Každý takový uzel mimo jiné obsahuje i pole ukazatelů na své sousedy.
+Graf jako takový je tvořen velkým polem ukazatelů na jednotlivé uzly. V tomto „grafovém“ poli jsou ukazatele seřazeny podle čísla daného uzlu, aby bylo možné je rychle vyhledávat.
+
+Při vytvoření haldy se alokuje nové pole ukazatelů, do kterého se překopíruje obsah grafového pole a následně se toto nové pole seřadí tak, aby splňovalo vlastnost minimové haldy.
+
+Graf i halda tedy mají každý svoje vlastní pole ukazatelů na stejné
+uzly. Svým způsobem tvoří jenom jiné pohledy na ty uzly a proto se změny v uzlech pomocí haldy projeví i u uzlů získaných grafovými funkcemi.
+
+
+== Dijkstrův algoritmus
+
+Dijkstrův algoritmus je určen k hledání nejkratších cest v grafu. Tyto cesty hledá z jednoho výchozího uzlu do všech ostatních uzlů.
+
+Pro každý uzel se v tomto algoritmu sledují dvě hodnoty -- jeho vzdálenost od počátečního uzlu a jeho předchůdce, tedy uzel, ze kterého se do daného uzlu dá dostat po jediné hraně.
+
+Na začátku algoritmus nastaví počátečnímu uzlu vzdálenost 0, ostatním uzlům vzdálenost nekonečno (v našem případě konstanta ``UINT_MAX``). Všechny uzly jsou také na začátku bez předchůdce (počáteční uzel ho nepotřebuje a ostatní uzly jsou nedosažitelné).
+
+Dále algoritmus pracuje v cyklu: najde neprozkoumaný dosažitelný vrchol s minimální vzdáleností -- pokud neexistuje, může skončit. Pro každou hranu vedoucí z tohoto vrcholu potom zjistí, zda tato hrana nezlepší vzdálenost do cílového uzlu této hrany. Pokud ano, zadá uzlu novou vzdálenost a nového předchůdce. Po zpracování všech hran vrcholu může hledat další neprozkoumaný dosažitelný vrchol s minimální vzdáleností.
+
+Z uložených předchůdců je nakonec možné zrekonstruovat celou cestu z počátku k cíli - jednotlivé uzly na této cestě ale dostaneme v opačném pořadí, tedy z cíle zjistíme předposlední uzel, z něj předpředposlední atd. až z druhého uzlu zjistíme počáteční uzel a ten už předchůdce nemá.
+
+V pseudokódu je tento algoritmus velice srozumitelně popsán na anglické link:++https://en.wikipedia.org/wiki/Dijkstra's_algorithm#Pseudocode++[Wikipedii].
